@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Content Warnings</title>
+</head>
+<body>
+    <div id="ContentWarningsConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-select,emby-checkbox">
+
+        <div data-role="content">
+            <div class="content-primary">
+
+                <form id="ContentWarningsConfigForm">
+
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Content Warnings Plugin</h2>
+                    </div>
+
+                    <p>
+                        Automatically tags movies and TV shows with content warnings
+                        (e.g. Violence, Language, Nudity) using the Groq AI API.
+                        Tags are stored with a <code>CW:</code> prefix and never overwrite
+                        existing tags.
+                    </p>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="groqApiKey">
+                            Groq API Key
+                        </label>
+                        <input id="groqApiKey" name="GroqApiKey" type="password"
+                               class="emby-input" placeholder="gsk_..." />
+                        <div class="fieldDescription">
+                            Get your free API key at
+                            <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="groqModel">
+                            Groq Model
+                        </label>
+                        <select id="groqModel" name="GroqModel" class="emby-select-withcolor emby-select">
+                            <option value="llama3-70b-8192">llama3-70b-8192 (recommended)</option>
+                            <option value="llama3-8b-8192">llama3-8b-8192 (faster, lighter)</option>
+                            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                        </select>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="enableMovies" name="EnableMovies" type="checkbox" class="emby-checkbox" />
+                            <span>Tag Movies</span>
+                        </label>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="enableTvShows" name="EnableTvShows" type="checkbox" class="emby-checkbox" />
+                            <span>Tag TV Shows (series level)</span>
+                        </label>
+                    </div>
+
+                    <br />
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+        var ContentWarningsConfig = {
+            pluginUniqueId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+
+            loadConfiguration: function (page) {
+                ApiClient.getPluginConfiguration(this.pluginUniqueId).then(function (config) {
+                    page.querySelector("#groqApiKey").value  = config.GroqApiKey  || "";
+                    page.querySelector("#groqModel").value   = config.GroqModel   || "llama3-70b-8192";
+                    page.querySelector("#enableMovies").checked  = config.EnableMovies  !== false;
+                    page.querySelector("#enableTvShows").checked = config.EnableTvShows !== false;
+                });
+            },
+
+            saveConfiguration: function (page) {
+                var self = this;
+                ApiClient.getPluginConfiguration(this.pluginUniqueId).then(function (config) {
+                    config.GroqApiKey   = page.querySelector("#groqApiKey").value;
+                    config.GroqModel    = page.querySelector("#groqModel").value;
+                    config.EnableMovies  = page.querySelector("#enableMovies").checked;
+                    config.EnableTvShows = page.querySelector("#enableTvShows").checked;
+
+                    ApiClient.updatePluginConfiguration(self.pluginUniqueId, config).then(function () {
+                        Dashboard.processPluginConfigurationUpdateResult();
+                    });
+                });
+            }
+        };
+
+        document.querySelector("#ContentWarningsConfigPage")
+            .addEventListener("pageshow", function () {
+                ContentWarningsConfig.loadConfiguration(this);
+            });
+
+        document.querySelector("#ContentWarningsConfigForm")
+            .addEventListener("submit", function (e) {
+                e.preventDefault();
+                ContentWarningsConfig.saveConfiguration(
+                    document.querySelector("#ContentWarningsConfigPage")
+                );
+            });
+    </script>
+</body>
+</html>
