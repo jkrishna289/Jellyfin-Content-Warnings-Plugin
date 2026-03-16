@@ -5,46 +5,35 @@ using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
-namespace Jellyfin.Plugin.ContentWarnings;
-
-/// <summary>
-/// Main plugin class — registers the plugin with Jellyfin.
-/// </summary>
-public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+namespace Jellyfin.Plugin.ContentWarnings
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Plugin"/> class.
-    /// </summary>
-    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
-        : base(applicationPaths, xmlSerializer)
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        Instance = this;
-    }
-
-    /// <inheritdoc />
-    public override string Name => "Content Warnings";
-
-    /// <inheritdoc />
-    public override Guid Id => Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
-
-    /// <inheritdoc />
-    public override string Description => "Automatically tags movies and TV shows with content warnings (violence, language, etc.) using Groq AI.";
-
-    /// <summary>
-    /// Gets the current plugin instance.
-    /// </summary>
-    public static Plugin? Instance { get; private set; }
-
-    /// <inheritdoc />
-    public IEnumerable<PluginPageInfo> GetPages()
-    {
-        return new[]
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+            : base(applicationPaths, xmlSerializer)
         {
-            new PluginPageInfo
+            Instance = this;
+        }
+
+        public override string Name => "Content Warnings";
+
+        public override Guid Id => new Guid("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
+        public override string Description =>
+            "Automatically tags movies and TV shows with content warnings using Groq AI.";
+
+        public static Plugin? Instance { get; private set; }
+
+        public IEnumerable<PluginPageInfo> GetPages()
+        {
+            return new[]
             {
-                Name = Name,
-                EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html"
-            }
-        };
+                new PluginPageInfo
+                {
+                    Name = Name,
+                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                }
+            };
+        }
     }
 }

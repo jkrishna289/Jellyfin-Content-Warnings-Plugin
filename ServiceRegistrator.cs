@@ -1,18 +1,17 @@
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Jellyfin.Plugin.ContentWarnings;
-
-/// <summary>
-/// Registers plugin services with Jellyfin's dependency injection container.
-/// </summary>
-public class ServiceRegistrator : IPluginServiceRegistrator
+namespace Jellyfin.Plugin.ContentWarnings
 {
-    /// <inheritdoc />
-    public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
+    public class ServiceRegistrator : IPluginServiceRegistrator
     {
-        serviceCollection.AddSingleton<GroqClient>();
-        serviceCollection.AddSingleton<IServerEntryPoint, ContentWarningProvider>();
+        public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
+        {
+            serviceCollection.AddSingleton<GroqClient>();
+            serviceCollection.AddHostedService<ContentWarningProvider>();
+            serviceCollection.AddSingleton<IScheduledTask, ProcessLibraryTask>();
+        }
     }
 }
