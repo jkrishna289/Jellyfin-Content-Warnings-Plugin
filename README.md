@@ -1,0 +1,1 @@
+# Jellyfin-Content-Warnings-Plugin
