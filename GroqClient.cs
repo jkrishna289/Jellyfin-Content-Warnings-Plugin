@@ -56,25 +56,29 @@ namespace Jellyfin.Plugin.ContentWarnings
                 return null;
             }
 
+            // Trim key to remove any accidental whitespace/newlines from config
+            var apiKey = config.GroqApiKey.Trim();
+            var model = (config.GroqModel ?? "llama3-70b-8192").Trim();
+
             var descriptorList = string.Join(", ", KnownDescriptors);
             var titleWithYear = year.HasValue ? title + " (" + year.Value + ")" : title;
 
             var systemPrompt =
-                "You are a film content classifier.\n" +
-                "Given a movie or TV show title, return ONLY a JSON object with exactly these two fields:\n" +
-                "{ \"rating\": \"<MPAA or TV rating e.g. R, PG-13, TV-MA, PG, G>\", \"descriptors\": [\"<descriptor1>\"] }\n" +
-                "Choose descriptors ONLY from this list: " + descriptorList + "\n" +
+                "You are a film content classifier. " +
+                "Given a movie or TV show title, return ONLY a JSON object with exactly these two fields: " +
+                "{\"rating\": \"<MPAA or TV rating e.g. R, PG-13, TV-MA, PG, G>\", \"descriptors\": [\"<descriptor1>\"]} " +
+                "Choose descriptors ONLY from this list: " + descriptorList + " " +
                 "Return an empty array if none apply. No explanation, no markdown, only raw JSON.";
 
             var requestBody = new
             {
-                model = config.GroqModel,
+                model = model,
                 temperature = 0.1,
                 max_tokens = 256,
-                messages = new[]
+                messages = new object[]
                 {
                     new { role = "system", content = systemPrompt },
-                    new { role = "user", content = "\"" + titleWithYear + "\"" }
+                    new { role = "user", content = titleWithYear }
                 }
             };
 
@@ -82,23 +86,27 @@ namespace Jellyfin.Plugin.ContentWarnings
             {
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", config.GroqApiKey);
+                    new AuthenticationHeaderValue("Bearer", apiKey);
 
                 var json = JsonSerializer.Serialize(requestBody);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync(ApiUrl, content, cancellationToken)
+                _logger.LogDebug("[ContentWarnings] Sending request for '{Title}' using model '{Model}'", title, model);
+
+                var response = await client.PostAsync(ApiUrl, httpContent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                // Always read the body so we can log errors properly
+                var body = await response.Content.ReadAsStringAsync(cancellationToken)
                     .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("[ContentWarnings] Groq returned {Code} for '{Title}'",
-                        response.StatusCode, title);
+                    _logger.LogError(
+                        "[ContentWarnings] Groq returned {Code} for '{Title}'. Response: {Body}",
+                        response.StatusCode, title, body);
                     return null;
                 }
-
-                var body = await response.Content.ReadAsStringAsync(cancellationToken)
-                    .ConfigureAwait(false);
 
                 using var doc = JsonDocument.Parse(body);
                 var messageContent = doc.RootElement
@@ -128,11 +136,11 @@ namespace Jellyfin.Plugin.ContentWarnings
                 var result = JsonSerializer.Deserialize<ContentWarningResult>(messageContent);
                 if (result == null)
                 {
-                    _logger.LogWarning("[ContentWarnings] Failed to parse Groq response for '{Title}'", title);
+                    _logger.LogWarning("[ContentWarnings] Failed to parse Groq response for '{Title}': {Raw}", title, messageContent);
                     return null;
                 }
 
-                _logger.LogInformation("[ContentWarnings] '{Title}' → {Rating} | {Descriptors}",
+                _logger.LogInformation("[ContentWarnings] '{Title}' -> {Rating} | {Descriptors}",
                     title, result.Rating, string.Join(", ", result.Descriptors));
 
                 return result;

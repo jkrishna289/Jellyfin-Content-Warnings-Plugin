@@ -6,7 +6,7 @@ namespace Jellyfin.Plugin.ContentWarnings
     {
         public string GroqApiKey { get; set; } = string.Empty;
 
-        public string GroqModel { get; set; } = "llama3-70b-8192";
+        public string GroqModel { get; set; } = "llama-3.3-70b-versatile";
 
         public bool EnableMovies { get; set; } = true;
 

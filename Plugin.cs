@@ -30,8 +30,9 @@ namespace Jellyfin.Plugin.ContentWarnings
             {
                 new PluginPageInfo
                 {
-                    Name = Name,
-                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                    Name = "Content Warnings",
+                    // Hardcoded: AssemblyName.FolderName.FileName
+                    EmbeddedResourcePath = "Jellyfin.Plugin.ContentWarnings.Configuration.configPage.html"
                 }
             };
         }
