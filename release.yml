@@ -1,0 +1,51 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Jellyfin.Plugin.ContentWarnings.csproj
+
+      - name: Build
+        run: dotnet publish Jellyfin.Plugin.ContentWarnings.csproj --configuration Release --output ./dist
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: Content Warnings Plugin ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Jellyfin Content Warnings Plugin ${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+            1. Download `Jellyfin.Plugin.ContentWarnings.dll` below
+            2. Place it in `/var/lib/jellyfin/plugins/ContentWarnings/`
+            3. Restart Jellyfin
+            4. Go to Dashboard → Plugins → Content Warnings → Settings
+            5. Enter your free [Groq API key](https://console.groq.com)
+
+            See the [README](https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin#readme) for full instructions.
+          files: |
+            dist/Jellyfin.Plugin.ContentWarnings.dll
+          draft: false
+          prerelease: false
