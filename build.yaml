@@ -1,0 +1,17 @@
+---
+version: 1.0.0
+name: "Content Warnings"
+description: "Automatically tags movies and TV shows with content warnings (Violence, Language, Nudity, etc.) using Groq AI."
+overview: "Uses Groq AI to identify and tag content descriptors for your entire Jellyfin library. Tags are stored with a CW: prefix so they never clash with existing tags."
+category: "Metadata"
+owner: "jkrishna289"
+imageUrl: ""
+tags:
+  - metadata
+  - content-warnings
+  - parental-controls
+  - ai
+  - groq
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+guid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
