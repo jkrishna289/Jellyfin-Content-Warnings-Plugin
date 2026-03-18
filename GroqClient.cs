@@ -64,12 +64,32 @@ namespace Jellyfin.Plugin.ContentWarnings
             var titleWithYear = year.HasValue ? title + " (" + year.Value + ")" : title;
 
             var systemPrompt =
-                "You are a film content classifier. " +
-                "Given a movie or TV show title, return ONLY a JSON object with exactly these two fields: " +
-                "{\"rating\": \"<MPAA or TV rating e.g. R, PG-13, TV-MA, PG, G>\", \"descriptors\": [\"<descriptor1>\"]} " +
-                "Choose descriptors ONLY from this list: " + descriptorList + " " +
-                "Return an empty array if none apply. No explanation, no markdown, only raw JSON.";
-
+              "You are a film content classifier. " +
+              "Given a movie or TV show title, return ONLY a single-line JSON object with exactly these two fields: " +
+              "{\"rating\": \"<MPAA or TV rating e.g. R, PG-13, TV-MA, PG, G>\", \"descriptors\": [\"<descriptor1>\"]} " +
+              "Choose descriptors ONLY from this list: " + descriptorList + ". Return an empty array if none apply. No explanation, no markdown, only raw JSON. " +
+            
+              // Core behaviour constraints
+              "Important rules for choosing descriptors: " +
+              "1) Only include a descriptor when the depiction is of a kind, intensity, duration, or realism that a typical parent/guardian would reasonably consider relevant to viewing decisions for the primary audience (e.g., young children). " +
+              "2) Assess context: realism (live-action vs cartoon), graphicness (non-graphic vs graphic), duration/frequency (brief single gag vs prolonged central sequence), and emotional tone (comic vs menacing). " +
+              "3) Do NOT mark brief, non-graphic, purely comic or slapstick action in family/animated films as 'fighting' or 'graphic violence' if it is unlikely to frighten a typical child. If the descriptor list contains an explicit 'mild/cartoon' variant, only use that when clearly appropriate. " +
+              "4) Include descriptors for content that is realistic, graphic, explicit, prolonged, central to the plot, or reasonably likely to distress a sensitive viewer (examples: graphic injury, explicit sexual content, sustained realistic violence, repeated strong sexual language). " +
+              "5) If an item is borderline or ambiguous, err on the side of OMITTING the descriptor (be conservative). " +
+            
+              // Rating selection rule
+              "Rating rule: choose the most widely distributed/released rating for that title; if multiple versions exist, use the most restrictive widely-available rating. " +
+            
+              // Output format enforcement
+              "Output formatting: produce EXACTLY one JSON object on a single line, with no extra keys, comments, or surrounding text. Example (one-line): {\"rating\":\"PG\",\"descriptors\":[]} " +
+            
+              // Decision examples (brief, for model guidance)
+              "Guiding examples (do not print these, only follow them): " +
+              "— For a family animated comedy where fights are slapstick, non-graphic and brief (e.g., comedic pratfalls), DO NOT add 'fighting' or 'graphic violence' (use empty descriptors unless a suitable 'mild' descriptor exists). " +
+              "— For realistic or graphic combat sequences, repeated or central violent themes, or content likely to alarm children, include the appropriate descriptor. " +
+            
+              // Final enforcement
+              "No extra output, no explanations, and strictly use only descriptors from the provided descriptorList.";
             var requestBody = new
             {
                 model = model,
