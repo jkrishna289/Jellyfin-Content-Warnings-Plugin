@@ -67,19 +67,19 @@
             <div class="verticalSection" style="border-top:1px solid var(--border-color);padding-top:1.5em;margin-top:1em">
                 <h3 class="sectionTitle">Actions</h3>
 
-                <!-- Scan library -->
+                <!-- Smart scan: only untagged items -->
                 <p class="fieldDescription" style="margin-bottom:1em">
-                    Run a full library scan to tag all untagged items. Already-tagged items are skipped.
+                    Scans only <strong>untagged</strong> items. Already tagged items are skipped. Safe to run anytime.
                 </p>
                 <button is="emby-button" id="cwScanBtn" class="raised">
-                    <span>▶ Scan Entire Library Now</span>
+                    <span>▶ Scan Untagged Items Only</span>
                 </button>
                 <div id="cwScanStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
 
                 <!-- Re-process single item -->
                 <div style="margin-top:2em">
                     <p class="fieldDescription" style="margin-bottom:0.75em">
-                        Re-process a single item by its Jellyfin Item ID. Clears existing <code>CW:</code> tags and re-fetches from Groq.
+                        Re-process a single item by its Jellyfin Item ID. Clears its <code>CW:</code> tags and re-fetches from Groq.
                     </p>
                     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
                         <div class="inputContainer" style="flex:1;min-width:200px;margin:0">
@@ -92,16 +92,39 @@
                     </div>
                     <div id="cwReprocessStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
                 </div>
+            </div>
 
-                <!-- Danger zone: clear all -->
-                <div style="margin-top:2em;padding-top:1.5em;border-top:1px solid var(--border-color)">
-                    <h3 class="sectionTitle" style="color:#e74c3c">⚠ Danger Zone</h3>
-                    <p class="fieldDescription" style="margin-bottom:1em">
-                        Remove ALL <code>CW:</code> tags from every item in your library.
-                        This cannot be undone — you will need to run a full scan again to re-tag.
+            <!-- Danger Zone -->
+            <div class="verticalSection" style="border-top:3px solid #e74c3c;padding-top:1.5em;margin-top:1.5em">
+
+                <h3 class="sectionTitle" style="color:#e74c3c">⚠️ Danger Zone</h3>
+
+                <!-- Full rescan warning -->
+                <div style="background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:4px;padding:1em;margin-bottom:1.5em">
+                    <p style="color:#e74c3c;font-weight:bold;margin-bottom:0.5em">
+                        ⚠️ WARNING — Full Rescan uses a LOT of API calls!
+                    </p>
+                    <ul style="color:var(--text-color-secondary);font-size:0.88em;margin:0;padding-left:1.2em;line-height:1.8">
+                        <li>This will <strong>delete ALL existing CW: tags</strong> from your entire library first</li>
+                        <li>Then it will make <strong>1 Groq API call per item</strong> — if you have 500 movies, that's 500 calls</li>
+                        <li>Groq's free tier has rate limits — <strong>large libraries may hit the limit and fail mid-scan</strong></li>
+                        <li>You may need to re-run the scan multiple times on very large libraries</li>
+                        <li>Consider using <em>"Scan Untagged Items Only"</em> above instead — it's much safer</li>
+                    </ul>
+                </div>
+
+                <button is="emby-button" id="cwFullRescanBtn" class="raised" style="background-color:#e74c3c;color:#fff;border-color:#c0392b">
+                    <span>🗑 Clear All CW: Tags &amp; Full Rescan</span>
+                </button>
+                <div id="cwFullRescanStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
+
+                <!-- Clear all only -->
+                <div style="margin-top:1.5em">
+                    <p class="fieldDescription" style="margin-bottom:0.75em">
+                        Only want to clear tags without rescanning?
                     </p>
                     <button is="emby-button" id="cwClearAllBtn" class="raised button-cancel">
-                        <span>🗑 Clear All CW: Tags</span>
+                        <span>🗑 Clear All CW: Tags Only</span>
                     </button>
                     <div id="cwClearStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
                 </div>
@@ -140,6 +163,7 @@
             });
         }
 
+        // Save
         document.getElementById("cwSaveBtn").addEventListener("click", function () {
             Dashboard.showLoadingMsg();
             ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
@@ -154,6 +178,7 @@
             });
         });
 
+        // Scan untagged only
         document.getElementById("cwScanBtn").addEventListener("click", function () {
             var status = document.getElementById("cwScanStatus");
             status.textContent = "Starting scan...";
@@ -175,6 +200,7 @@
             });
         });
 
+        // Re-process single item
         document.getElementById("cwReprocessBtn").addEventListener("click", function () {
             var itemId = document.getElementById("cwItemId").value.trim();
             var status = document.getElementById("cwReprocessStatus");
@@ -196,6 +222,48 @@
             });
         });
 
+        // Full rescan: clear all then scan
+        document.getElementById("cwFullRescanBtn").addEventListener("click", function () {
+            if (!confirm(
+                "⚠️ ARE YOU SURE?\n\n" +
+                "This will:\n" +
+                "1. DELETE all existing CW: tags from your entire library\n" +
+                "2. Make ONE Groq API call per item (movies + shows)\n\n" +
+                "Large libraries can exhaust your Groq API rate limit.\n\n" +
+                "Consider using 'Scan Untagged Items Only' instead.\n\n" +
+                "Continue anyway?"
+            )) return;
+
+            var status = document.getElementById("cwFullRescanStatus");
+            status.textContent = "Step 1/2: Clearing all CW: tags...";
+            status.style.color = "orange";
+
+            var clearUrl = ApiClient.getUrl("ContentWarnings/ClearAll");
+            ApiClient.ajax({ type: "DELETE", url: clearUrl }).then(function (result) {
+                status.textContent = "Step 2/2: Starting full scan... (" + result.cleared + " items cleared)";
+
+                ApiClient.getScheduledTasks().then(function (tasks) {
+                    var task = tasks.find(function (t) { return t.Key === "ContentWarningsProcessLibrary"; });
+                    if (!task) {
+                        status.textContent = "Tags cleared but scan task not found. Restart Jellyfin and try again.";
+                        status.style.color = "red";
+                        return;
+                    }
+                    ApiClient.startScheduledTask(task.Id).then(function () {
+                        status.innerHTML = "&#10003; All CW: tags cleared and full scan started! Check <a href='/web/index.html#!/scheduledtasks.html'>Scheduled Tasks</a> for progress.";
+                        status.style.color = "green";
+                    }).catch(function () {
+                        status.textContent = "Tags cleared but failed to start scan.";
+                        status.style.color = "red";
+                    });
+                });
+            }).catch(function () {
+                status.textContent = "Failed to clear tags. Check logs.";
+                status.style.color = "red";
+            });
+        });
+
+        // Clear all only
         document.getElementById("cwClearAllBtn").addEventListener("click", function () {
             if (!confirm("Are you sure? This will remove ALL CW: tags from your entire library. This cannot be undone.")) return;
             var status = document.getElementById("cwClearStatus");
