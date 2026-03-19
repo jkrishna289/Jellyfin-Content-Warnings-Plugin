@@ -53,8 +53,9 @@ namespace Jellyfin.Plugin.ContentWarnings
             {
                 try
                 {
+                    var itemType = item.GetType().Name;
                     var result = await _groqClient.GetContentWarningsAsync(
-                        item.Name, item.ProductionYear, CancellationToken.None)
+                        item.Name, item.ProductionYear, itemType, CancellationToken.None)
                         .ConfigureAwait(false);
 
                     if (result != null)

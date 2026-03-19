@@ -18,6 +18,9 @@ namespace Jellyfin.Plugin.ContentWarnings
 
         [JsonPropertyName("descriptors")]
         public List<string> Descriptors { get; set; } = new List<string>();
+
+        [JsonPropertyName("reasoning")]
+        public string Reasoning { get; set; } = string.Empty;
     }
 
     public class GroqClient
@@ -47,6 +50,7 @@ namespace Jellyfin.Plugin.ContentWarnings
         public async Task<ContentWarningResult?> GetContentWarningsAsync(
             string title,
             int? year,
+            string itemType,
             CancellationToken cancellationToken)
         {
             var config = Plugin.Instance?.Configuration;
@@ -56,49 +60,37 @@ namespace Jellyfin.Plugin.ContentWarnings
                 return null;
             }
 
-            // Trim key to remove any accidental whitespace/newlines from config
             var apiKey = config.GroqApiKey.Trim();
-            var model = (config.GroqModel ?? "llama3-70b-8192").Trim();
-
+            var model = (config.GroqModel ?? "llama-3.3-70b-versatile").Trim();
             var descriptorList = string.Join(", ", KnownDescriptors);
             var titleWithYear = year.HasValue ? title + " (" + year.Value + ")" : title;
+            var typeLabel = itemType == "Series" ? "TV series" : "movie";
 
             var systemPrompt =
-              "You are a film content classifier. " +
-              "Given a movie or TV show title, return ONLY a single-line JSON object with exactly these two fields: " +
-              "{\"rating\": \"<MPAA or TV rating e.g. R, PG-13, TV-MA, PG, G>\", \"descriptors\": [\"<descriptor1>\"]} " +
-              "Choose descriptors ONLY from this list: " + descriptorList + ". Return an empty array if none apply. No explanation, no markdown, only raw JSON. " +
-            
-              // Core behaviour constraints
-              "Important rules for choosing descriptors: " +
-              "1) Only include a descriptor when the depiction is of a kind, intensity, duration, or realism that a typical parent/guardian would reasonably consider relevant to viewing decisions for the primary audience (e.g., young children). " +
-              "2) Assess context: realism (live-action vs cartoon), graphicness (non-graphic vs graphic), duration/frequency (brief single gag vs prolonged central sequence), and emotional tone (comic vs menacing). " +
-              "3) Do NOT mark brief, non-graphic, purely comic or slapstick action in family/animated films as 'fighting' or 'graphic violence' if it is unlikely to frighten a typical child. If the descriptor list contains an explicit 'mild/cartoon' variant, only use that when clearly appropriate. " +
-              "4) Include descriptors for content that is realistic, graphic, explicit, prolonged, central to the plot, or reasonably likely to distress a sensitive viewer (examples: graphic injury, explicit sexual content, sustained realistic violence, repeated strong sexual language). " +
-              "5) If an item is borderline or ambiguous, err on the side of OMITTING the descriptor (be conservative). " +
-            
-              // Rating selection rule
-              "Rating rule: choose the most widely distributed/released rating for that title; if multiple versions exist, use the most restrictive widely-available rating. " +
-            
-              // Output format enforcement
-              "Output formatting: produce EXACTLY one JSON object on a single line, with no extra keys, comments, or surrounding text. Example (one-line): {\"rating\":\"PG\",\"descriptors\":[]} " +
-            
-              // Decision examples (brief, for model guidance)
-              "Guiding examples (do not print these, only follow them): " +
-              "— For a family animated comedy where fights are slapstick, non-graphic and brief (e.g., comedic pratfalls), DO NOT add 'fighting' or 'graphic violence' (use empty descriptors unless a suitable 'mild' descriptor exists). " +
-              "— For realistic or graphic combat sequences, repeated or central violent themes, or content likely to alarm children, include the appropriate descriptor. " +
-            
-              // Final enforcement
-              "No extra output, no explanations, and strictly use only descriptors from the provided descriptorList.";
+                "You are an expert film and television content classifier with deep knowledge of rating systems worldwide. " +
+                "Given a " + typeLabel + " title, return ONLY a JSON object with exactly these three fields: " +
+                "{\"rating\": \"<official rating>\", \"descriptors\": [\"<descriptor>\"], \"reasoning\": \"<brief reason>\"} " +
+                "For 'rating': use the most widely known official rating for this title (e.g. R, PG-13, TV-MA, 15, 18). " +
+                "If the title is unknown to you, make your best educated guess based on the genre implied by the title. " +
+                "For 'descriptors': choose ONLY from this exact list: " + descriptorList + ". " +
+                "Pick all that genuinely apply — do not add descriptors not in the list. " +
+                "Return an empty array only if truly no descriptors apply. " +
+                "For 'reasoning': write 1-2 sentences explaining why you chose those descriptors and rating. " +
+                "No markdown, no extra text, only raw JSON.";
+
+            var userMessage =
+                "Title: \"" + titleWithYear + "\" " +
+                "Type: " + typeLabel;
+
             var requestBody = new
             {
                 model = model,
                 temperature = 0.1,
-                max_tokens = 256,
+                max_tokens = 400,
                 messages = new object[]
                 {
                     new { role = "system", content = systemPrompt },
-                    new { role = "user", content = titleWithYear }
+                    new { role = "user", content = userMessage }
                 }
             };
 
@@ -111,19 +103,16 @@ namespace Jellyfin.Plugin.ContentWarnings
                 var json = JsonSerializer.Serialize(requestBody);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogDebug("[ContentWarnings] Sending request for '{Title}' using model '{Model}'", title, model);
-
                 var response = await client.PostAsync(ApiUrl, httpContent, cancellationToken)
                     .ConfigureAwait(false);
 
-                // Always read the body so we can log errors properly
                 var body = await response.Content.ReadAsStringAsync(cancellationToken)
                     .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError(
-                        "[ContentWarnings] Groq returned {Code} for '{Title}'. Response: {Body}",
+                        "[ContentWarnings] Groq returned {Code} for '{Title}'. Body: {Body}",
                         response.StatusCode, title, body);
                     return null;
                 }
@@ -148,20 +137,23 @@ namespace Jellyfin.Plugin.ContentWarnings
                     var firstNewline = messageContent.IndexOf('\n');
                     var lastFence = messageContent.LastIndexOf("```", StringComparison.Ordinal);
                     if (firstNewline >= 0 && lastFence > firstNewline)
-                    {
                         messageContent = messageContent.Substring(firstNewline + 1, lastFence - firstNewline - 1).Trim();
-                    }
                 }
 
                 var result = JsonSerializer.Deserialize<ContentWarningResult>(messageContent);
                 if (result == null)
                 {
-                    _logger.LogWarning("[ContentWarnings] Failed to parse Groq response for '{Title}': {Raw}", title, messageContent);
+                    _logger.LogWarning("[ContentWarnings] Failed to parse response for '{Title}': {Raw}", title, messageContent);
                     return null;
                 }
 
-                _logger.LogInformation("[ContentWarnings] '{Title}' -> {Rating} | {Descriptors}",
-                    title, result.Rating, string.Join(", ", result.Descriptors));
+                // Log reasoning for debugging
+                _logger.LogInformation(
+                    "[ContentWarnings] '{Title}' → {Rating} | {Descriptors} | Reason: {Reasoning}",
+                    title,
+                    result.Rating,
+                    string.Join(", ", result.Descriptors),
+                    result.Reasoning);
 
                 return result;
             }

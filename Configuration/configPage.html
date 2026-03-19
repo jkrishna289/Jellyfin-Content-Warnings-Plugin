@@ -5,13 +5,18 @@
 
     <div data-role="content">
         <div class="content-primary">
-            <form id="ContentWarningsConfigForm">
 
-                <h2 class="sectionTitle">Content Warnings</h2>
-                <p>
-                    Automatically tags movies and TV shows with content warnings
-                    (e.g. <code>CW:Violence</code>, <code>CW:Language</code>) using Groq AI.
-                </p>
+            <div class="sectionTitleContainer">
+                <h2 class="sectionTitle">🎬 Content Warnings</h2>
+            </div>
+            <p style="color:var(--text-color-secondary);margin-bottom:1.5em">
+                Automatically tags your library with content warnings using Groq AI.
+                Tags are stored with a <code>CW:</code> prefix so they never clash with existing tags.
+            </p>
+
+            <!-- API Settings -->
+            <div class="verticalSection">
+                <h3 class="sectionTitle">API Settings</h3>
 
                 <input id="cwExistingKey" type="hidden" />
 
@@ -32,77 +37,181 @@
                         <option value="llama3-70b-8192">llama3-70b-8192 (legacy)</option>
                     </select>
                 </div>
+            </div>
 
+            <!-- Library Settings -->
+            <div class="verticalSection">
+                <h3 class="sectionTitle">Library Settings</h3>
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input id="cwMovies" is="emby-checkbox" type="checkbox" />
                         <span>Tag Movies</span>
                     </label>
                 </div>
-
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input id="cwTvShows" is="emby-checkbox" type="checkbox" />
                         <span>Tag TV Shows (series level)</span>
                     </label>
                 </div>
+            </div>
 
-                <br />
-
-                <button is="emby-button" type="submit" class="raised button-submit block">
-                    <span>Save</span>
+            <!-- Save -->
+            <div class="verticalSection">
+                <button is="emby-button" id="cwSaveBtn" class="raised button-submit">
+                    <span>💾 Save Settings</span>
                 </button>
+            </div>
 
-            </form>
+            <!-- Actions -->
+            <div class="verticalSection" style="border-top:1px solid var(--border-color);padding-top:1.5em;margin-top:1em">
+                <h3 class="sectionTitle">Actions</h3>
+
+                <!-- Scan library -->
+                <p class="fieldDescription" style="margin-bottom:1em">
+                    Run a full library scan to tag all untagged items. Already-tagged items are skipped.
+                </p>
+                <button is="emby-button" id="cwScanBtn" class="raised">
+                    <span>▶ Scan Entire Library Now</span>
+                </button>
+                <div id="cwScanStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
+
+                <!-- Re-process single item -->
+                <div style="margin-top:2em">
+                    <p class="fieldDescription" style="margin-bottom:0.75em">
+                        Re-process a single item by its Jellyfin Item ID. Clears existing <code>CW:</code> tags and re-fetches from Groq.
+                    </p>
+                    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+                        <div class="inputContainer" style="flex:1;min-width:200px;margin:0">
+                            <label class="inputLabel inputLabelUnfocused" for="cwItemId">Item ID</label>
+                            <input id="cwItemId" is="emby-input" type="text" placeholder="e.g. a1b2c3d4-e5f6-..." />
+                        </div>
+                        <button is="emby-button" id="cwReprocessBtn" class="raised">
+                            <span>🔄 Re-process</span>
+                        </button>
+                    </div>
+                    <div id="cwReprocessStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
+                </div>
+
+                <!-- Danger zone: clear all -->
+                <div style="margin-top:2em;padding-top:1.5em;border-top:1px solid var(--border-color)">
+                    <h3 class="sectionTitle" style="color:#e74c3c">⚠ Danger Zone</h3>
+                    <p class="fieldDescription" style="margin-bottom:1em">
+                        Remove ALL <code>CW:</code> tags from every item in your library.
+                        This cannot be undone — you will need to run a full scan again to re-tag.
+                    </p>
+                    <button is="emby-button" id="cwClearAllBtn" class="raised button-cancel">
+                        <span>🗑 Clear All CW: Tags</span>
+                    </button>
+                    <div id="cwClearStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
+                </div>
+
+            </div>
+
         </div>
     </div>
 
     <script type="text/javascript">
-        var ContentWarningsConfig = {
-            pluginUniqueId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-        };
+        var PLUGIN_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
-        document.querySelector("#ContentWarningsConfigPage").addEventListener("pageshow", function () {
+        function loadConfig() {
             Dashboard.showLoadingMsg();
-            ApiClient.getPluginConfiguration(ContentWarningsConfig.pluginUniqueId).then(function (config) {
+            ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
                 var existing = config.GroqApiKey || "";
-                document.querySelector("#cwExistingKey").value = existing;
-                document.querySelector("#cwApiKey").value = "";
+                document.getElementById("cwExistingKey").value = existing;
+                document.getElementById("cwApiKey").value = "";
 
-                var status = document.querySelector("#cwKeyStatus");
+                var status = document.getElementById("cwKeyStatus");
                 if (existing.length > 0) {
-                    document.querySelector("#cwApiKey").placeholder = "Leave blank to keep existing key";
-                    status.textContent = "\u2713 API key is saved";
+                    document.getElementById("cwApiKey").placeholder = "Leave blank to keep existing key";
+                    status.innerHTML = "&#10003; API key is saved";
                     status.style.color = "green";
                 } else {
-                    document.querySelector("#cwApiKey").placeholder = "gsk_...";
-                    status.textContent = "\u26A0 No API key set yet";
+                    document.getElementById("cwApiKey").placeholder = "gsk_...";
+                    status.innerHTML = "&#9888; No API key set yet";
                     status.style.color = "orange";
                 }
 
-                document.querySelector("#cwModel").value     = config.GroqModel    || "llama-3.3-70b-versatile";
-                document.querySelector("#cwMovies").checked  = config.EnableMovies  !== false;
-                document.querySelector("#cwTvShows").checked = config.EnableTvShows !== false;
+                document.getElementById("cwModel").value     = config.GroqModel    || "llama-3.3-70b-versatile";
+                document.getElementById("cwMovies").checked  = config.EnableMovies  !== false;
+                document.getElementById("cwTvShows").checked = config.EnableTvShows !== false;
 
                 Dashboard.hideLoadingMsg();
             });
-        });
+        }
 
-        document.querySelector("#ContentWarningsConfigForm").addEventListener("submit", function (e) {
-            e.preventDefault();
+        document.getElementById("cwSaveBtn").addEventListener("click", function () {
             Dashboard.showLoadingMsg();
-
-            ApiClient.getPluginConfiguration(ContentWarningsConfig.pluginUniqueId).then(function (config) {
-                var typed = document.querySelector("#cwApiKey").value.trim();
-                config.GroqApiKey    = typed.length > 0 ? typed : document.querySelector("#cwExistingKey").value;
-                config.GroqModel     = document.querySelector("#cwModel").value;
-                config.EnableMovies  = document.querySelector("#cwMovies").checked;
-                config.EnableTvShows = document.querySelector("#cwTvShows").checked;
-
-                ApiClient.updatePluginConfiguration(ContentWarningsConfig.pluginUniqueId, config).then(function (result) {
+            ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+                var typed = document.getElementById("cwApiKey").value.trim();
+                config.GroqApiKey    = typed.length > 0 ? typed : document.getElementById("cwExistingKey").value;
+                config.GroqModel     = document.getElementById("cwModel").value;
+                config.EnableMovies  = document.getElementById("cwMovies").checked;
+                config.EnableTvShows = document.getElementById("cwTvShows").checked;
+                ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function (result) {
                     Dashboard.processPluginConfigurationUpdateResult(result);
                 });
             });
         });
+
+        document.getElementById("cwScanBtn").addEventListener("click", function () {
+            var status = document.getElementById("cwScanStatus");
+            status.textContent = "Starting scan...";
+            status.style.color = "var(--text-color-secondary)";
+            ApiClient.getScheduledTasks().then(function (tasks) {
+                var task = tasks.find(function (t) { return t.Key === "ContentWarningsProcessLibrary"; });
+                if (!task) {
+                    status.textContent = "Task not found. Try restarting Jellyfin.";
+                    status.style.color = "red";
+                    return;
+                }
+                ApiClient.startScheduledTask(task.Id).then(function () {
+                    status.innerHTML = "&#10003; Scan started! Check <a href='/web/index.html#!/scheduledtasks.html'>Scheduled Tasks</a> for progress.";
+                    status.style.color = "green";
+                }).catch(function () {
+                    status.textContent = "Failed to start scan.";
+                    status.style.color = "red";
+                });
+            });
+        });
+
+        document.getElementById("cwReprocessBtn").addEventListener("click", function () {
+            var itemId = document.getElementById("cwItemId").value.trim();
+            var status = document.getElementById("cwReprocessStatus");
+            if (!itemId) {
+                status.textContent = "Please enter an Item ID.";
+                status.style.color = "orange";
+                return;
+            }
+            status.textContent = "Processing...";
+            status.style.color = "var(--text-color-secondary)";
+            var url = ApiClient.getUrl("ContentWarnings/Reprocess/" + itemId);
+            ApiClient.ajax({ type: "POST", url: url }).then(function () {
+                status.innerHTML = "&#10003; Item re-processed successfully!";
+                status.style.color = "green";
+                document.getElementById("cwItemId").value = "";
+            }).catch(function (err) {
+                status.textContent = "Error: " + (err.status === 404 ? "Item not found." : "Failed to re-process.");
+                status.style.color = "red";
+            });
+        });
+
+        document.getElementById("cwClearAllBtn").addEventListener("click", function () {
+            if (!confirm("Are you sure? This will remove ALL CW: tags from your entire library. This cannot be undone.")) return;
+            var status = document.getElementById("cwClearStatus");
+            status.textContent = "Clearing all CW: tags...";
+            status.style.color = "var(--text-color-secondary)";
+            var url = ApiClient.getUrl("ContentWarnings/ClearAll");
+            ApiClient.ajax({ type: "DELETE", url: url }).then(function (result) {
+                status.innerHTML = "&#10003; " + result.message;
+                status.style.color = "green";
+            }).catch(function () {
+                status.textContent = "Failed to clear tags. Check logs.";
+                status.style.color = "red";
+            });
+        });
+
+        document.getElementById("ContentWarningsConfigPage")
+            .addEventListener("pageshow", loadConfig);
     </script>
 </div>

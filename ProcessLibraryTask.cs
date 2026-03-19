@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -34,9 +33,7 @@ namespace Jellyfin.Plugin.ContentWarnings
         public string Category => "Content Warnings";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
-        {
-            return Array.Empty<TaskTriggerInfo>();
-        }
+            => Array.Empty<TaskTriggerInfo>();
 
         public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
@@ -51,22 +48,20 @@ namespace Jellyfin.Plugin.ContentWarnings
 
             if (config.EnableMovies)
             {
-                var movies = _libraryManager.GetItemList(new InternalItemsQuery
+                items.AddRange(_libraryManager.GetItemList(new InternalItemsQuery
                 {
                     IncludeItemTypes = new[] { BaseItemKind.Movie },
                     Recursive = true
-                });
-                items.AddRange(movies);
+                }));
             }
 
             if (config.EnableTvShows)
             {
-                var series = _libraryManager.GetItemList(new InternalItemsQuery
+                items.AddRange(_libraryManager.GetItemList(new InternalItemsQuery
                 {
                     IncludeItemTypes = new[] { BaseItemKind.Series },
                     Recursive = true
-                });
-                items.AddRange(series);
+                }));
             }
 
             if (items.Count == 0)
@@ -78,14 +73,11 @@ namespace Jellyfin.Plugin.ContentWarnings
 
             _logger.LogInformation("[ContentWarnings] Processing {Count} item(s).", items.Count);
 
-            int done = 0;
-            int tagged = 0;
-            int skipped = 0;
+            int done = 0, tagged = 0, skipped = 0;
 
             foreach (var item in items)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
                 progress.Report((double)done / items.Count * 100.0);
                 done++;
 
@@ -95,25 +87,24 @@ namespace Jellyfin.Plugin.ContentWarnings
                     continue;
                 }
 
+                var itemType = item.GetType().Name;
                 var result = await _groqClient.GetContentWarningsAsync(
-                    item.Name, item.ProductionYear, cancellationToken)
+                    item.Name, item.ProductionYear, itemType, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (result != null)
                 {
-                    await TagHelper.ApplyTagsAsync(
-                        item, result, _libraryManager, _logger, cancellationToken)
+                    await TagHelper.ApplyTagsAsync(item, result, _libraryManager, _logger, cancellationToken)
                         .ConfigureAwait(false);
                     tagged++;
                 }
 
-                // Small delay to avoid rate-limiting Groq
                 await Task.Delay(400, cancellationToken).ConfigureAwait(false);
             }
 
             progress.Report(100);
             _logger.LogInformation(
-                "[ContentWarnings] Done. Tagged: {Tagged}, Already had tags: {Skipped}, Total: {Total}",
+                "[ContentWarnings] Done. Tagged: {Tagged}, Skipped: {Skipped}, Total: {Total}",
                 tagged, skipped, items.Count);
         }
     }
