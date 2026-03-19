@@ -1,5 +1,8 @@
 bin/
 obj/
 dist/
+out/
+publish/
+*.zip
 *.user
 .vs/
