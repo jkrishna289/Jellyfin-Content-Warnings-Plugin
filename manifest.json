@@ -9,12 +9,20 @@
     "owner": "jkrishna289",
     "versions": [
       {
+        "version": "1.1.1.0",
+        "changelog": "Danger zone with full rescan option (clears all CW: tags then rescans), API rate limit warning, separate clear-only button.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.1/Jellyfin.Plugin.ContentWarnings.zip",
+        "checksum": "94c7332196c33e3929f9f7f3961630cb",
+        "timestamp": "2026-03-19T00:00:00Z"
+      },
+      {
         "version": "1.1.0.0",
-        "changelog": "Improved Groq prompt accuracy, scan button on settings page, re-process single item, clear all CW: tags (danger zone).",
+        "changelog": "Improved Groq prompt accuracy, scan button on settings page, re-process single item, clear all CW: tags.",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.0/Jellyfin.Plugin.ContentWarnings.zip",
         "checksum": "5a9caeae75ad5a2db43845063912a008",
-        "timestamp": "2026-03-19T00:00:00Z"
+        "timestamp": "2026-03-17T00:00:00Z"
       },
       {
         "version": "1.0.0.0",
