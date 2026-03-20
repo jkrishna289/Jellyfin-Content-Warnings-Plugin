@@ -27,11 +27,13 @@ jobs:
       - name: Build
         run: dotnet publish Jellyfin.Plugin.ContentWarnings.csproj --configuration Release --output ./dist
 
-      - name: Package as ZIP
+      - name: Package as ZIP (DLL at root, no subfolder)
         run: |
           cd dist
           zip ../Jellyfin.Plugin.ContentWarnings.zip Jellyfin.Plugin.ContentWarnings.dll
           cd ..
+          echo "ZIP contents:"
+          unzip -l Jellyfin.Plugin.ContentWarnings.zip
 
       - name: Get version
         id: version
