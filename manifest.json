@@ -9,8 +9,16 @@
     "owner": "jkrishna289",
     "versions": [
       {
+        "version": "1.2.0.0",
+        "changelog": "Library status table with live per-row updates, per-item rescan button, smart server-side cache, improved filters (type/status/search).",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.0/Jellyfin.Plugin.ContentWarnings.zip",
+        "checksum": "a68a93b52e7998274c444670aadda20c",
+        "timestamp": "2026-03-20T00:00:00Z"
+      },
+      {
         "version": "1.1.1.0",
-        "changelog": "Danger zone with full rescan option (clears all CW: tags then rescans), API rate limit warning, separate clear-only button.",
+        "changelog": "Danger zone with full rescan option, API rate limit warning, separate clear-only button.",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.1/Jellyfin.Plugin.ContentWarnings.zip",
         "checksum": "94c7332196c33e3929f9f7f3961630cb",
