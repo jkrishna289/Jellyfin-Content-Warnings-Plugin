@@ -10,11 +10,11 @@
     "versions": [
       {
         "version": "1.2.0.0",
-        "changelog": "Library status table with live per-row updates, per-item rescan button, smart server-side cache, improved filters. Fixed catalog install (DLL now at zip root).",
+        "changelog": "Library status table with live per-row updates, per-item rescan, smart cache, improved filters. Fixed catalog install.",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.0/Jellyfin.Plugin.ContentWarnings.zip",
-        "checksum": "e6b9829accabe56bee50a57a90b2fd82",
-        "timestamp": "2026-03-20T00:00:00Z"
+        "checksum": "22fed85457481c8fa1851d2cfc0686c0",
+        "timestamp": "2026-03-21T00:00:00Z"
       },
       {
         "version": "1.1.1.0",
