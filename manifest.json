@@ -9,6 +9,14 @@
     "owner": "jkrishna289",
     "versions": [
       {
+        "version": "1.2.1.0",
+        "changelog": "Fixed assembly version display. Library status table with live per-row updates, per-item rescan, smart cache, improved filters.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.1/Jellyfin.Plugin.ContentWarnings.zip",
+        "checksum": "5ffd4d107077ef34f8c2defdbaa2c923",
+        "timestamp": "2026-03-21T00:00:00Z"
+      },
+      {
         "version": "1.2.0.0",
         "changelog": "Library status table with live per-row updates, per-item rescan, smart cache, improved filters. Fixed catalog install.",
         "targetAbi": "10.11.0.0",
