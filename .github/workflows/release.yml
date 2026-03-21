@@ -25,14 +25,14 @@ jobs:
         run: dotnet restore Jellyfin.Plugin.ContentWarnings.csproj
 
       - name: Build
-        run: dotnet publish Jellyfin.Plugin.ContentWarnings.csproj --configuration Release --output ./dist
+        run: dotnet publish Jellyfin.Plugin.ContentWarnings.csproj --configuration Release --output ./publish_output
 
-      - name: Package as ZIP (DLL at root, no subfolder)
+      - name: Package as ZIP (single DLL at root, no subfolders)
         run: |
-          cd dist
+          cd publish_output
           zip ../Jellyfin.Plugin.ContentWarnings.zip Jellyfin.Plugin.ContentWarnings.dll
           cd ..
-          echo "ZIP contents:"
+          echo "=== ZIP contents (must show only 1 file at root) ==="
           unzip -l Jellyfin.Plugin.ContentWarnings.zip
 
       - name: Get version
@@ -53,12 +53,9 @@ jobs:
             2. Go to Catalog → find Content Warnings → Install
 
             ### Manual Installation
-            1. Download `Jellyfin.Plugin.ContentWarnings.zip` below
+            1. Download `Jellyfin.Plugin.ContentWarnings.zip`
             2. Extract the `.dll` to `/var/lib/jellyfin/plugins/ContentWarnings/`
             3. Restart Jellyfin
-
-            See the [README](https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin#readme) for full instructions.
-          files: |
-            Jellyfin.Plugin.ContentWarnings.zip
+          files: Jellyfin.Plugin.ContentWarnings.zip
           draft: false
           prerelease: false
