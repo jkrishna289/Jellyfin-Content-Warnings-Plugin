@@ -29,7 +29,7 @@ namespace Jellyfin.Plugin.ContentWarnings
 
         public string Name => "Process Content Warnings";
         public string Key => "ContentWarningsProcessLibrary";
-        public string Description => "Tags movies and TV shows with CW: content warning tags using Groq AI. Skips already-tagged items.";
+        public string Description => "Tags movies and TV shows/episodes with CW: content warning tags using Groq AI. Skips already-tagged items.";
         public string Category => "Content Warnings";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -55,7 +55,18 @@ namespace Jellyfin.Plugin.ContentWarnings
                 }));
             }
 
-            if (config.EnableTvShows)
+            // If episode tagging is enabled, tag episodes only (not series)
+            // If only series tagging is enabled, tag at series level
+            if (config.EnableTvEpisodes)
+            {
+                _logger.LogInformation("[ContentWarnings] Episode tagging enabled — tagging individual episodes.");
+                items.AddRange(_libraryManager.GetItemList(new InternalItemsQuery
+                {
+                    IncludeItemTypes = new[] { BaseItemKind.Episode },
+                    Recursive = true
+                }));
+            }
+            else if (config.EnableTvShows)
             {
                 items.AddRange(_libraryManager.GetItemList(new InternalItemsQuery
                 {

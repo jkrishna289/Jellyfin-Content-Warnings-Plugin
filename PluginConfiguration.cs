@@ -10,6 +10,10 @@ namespace Jellyfin.Plugin.ContentWarnings
 
         public bool EnableMovies { get; set; } = true;
 
+        // Tags at series level — on by default
         public bool EnableTvShows { get; set; } = true;
+
+        // Tags at episode level — OFF by default, costs many API calls
+        public bool EnableTvEpisodes { get; set; } = false;
     }
 }

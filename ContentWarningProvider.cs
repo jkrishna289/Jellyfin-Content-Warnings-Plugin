@@ -43,8 +43,10 @@ namespace Jellyfin.Plugin.ContentWarnings
             var config = Plugin.Instance?.Configuration;
             if (config == null) return;
 
-            bool shouldProcess = (item is Movie && config.EnableMovies)
-                              || (item is Series && config.EnableTvShows);
+            bool shouldProcess =
+                (item is Movie && config.EnableMovies) ||
+                (item is Series && config.EnableTvShows && !config.EnableTvEpisodes) ||
+                (item is Episode && config.EnableTvEpisodes);
 
             if (!shouldProcess) return;
             if (TagHelper.HasContentWarningTags(item)) return;
