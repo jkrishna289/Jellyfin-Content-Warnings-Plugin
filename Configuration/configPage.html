@@ -37,22 +37,18 @@
             <!-- Library Settings -->
             <div class="verticalSection">
                 <h3 class="sectionTitle">Library Settings</h3>
-
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input id="cwMovies" is="emby-checkbox" type="checkbox" />
                         <span>Tag Movies</span>
                     </label>
                 </div>
-
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input id="cwTvShows" is="emby-checkbox" type="checkbox" />
                         <span>Tag TV Shows (series level)</span>
                     </label>
                 </div>
-
-                <!-- Episode tagging — yellow warning -->
                 <div style="margin-top:1em;padding:0.85em 1em;border:1px solid #f39c12;border-radius:4px;background:rgba(243,156,18,0.08)">
                     <label class="emby-checkbox-label" style="margin-bottom:0.5em">
                         <input id="cwTvEpisodes" type="checkbox" class="emby-checkbox" />
@@ -67,9 +63,7 @@
             </div>
 
             <div class="verticalSection">
-                <button is="emby-button" id="cwSaveBtn" class="raised button-submit">
-                    <span>💾 Save Settings</span>
-                </button>
+                <button is="emby-button" id="cwSaveBtn" class="raised button-submit"><span>💾 Save Settings</span></button>
             </div>
 
             <!-- Quick Actions -->
@@ -78,7 +72,6 @@
                 <p class="fieldDescription" style="margin-bottom:1em">Scans only <strong>untagged</strong> items. Safe to run anytime.</p>
                 <button is="emby-button" id="cwScanBtn" class="raised"><span>▶ Scan Untagged Items Only</span></button>
                 <div id="cwScanStatus" style="margin-top:0.75em;font-size:0.85em;color:var(--text-color-secondary)"></div>
-
                 <div style="margin-top:1.5em">
                     <p class="fieldDescription" style="margin-bottom:0.75em">Re-process a single item by its Jellyfin Item ID.</p>
                     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
@@ -97,18 +90,14 @@
                 <h3 class="sectionTitle">📋 Library Status</h3>
                 <p class="fieldDescription" style="margin-bottom:1em">
                     All movies and TV shows — tagged or not. Click <strong>📂 Load Library</strong> to fetch.
-                    Changes (rescan, clear) update rows instantly without reloading.
+                    Changes update rows instantly without reloading.
                 </p>
-
-                <!-- Stats -->
                 <div id="cwStatsBar" style="display:none;margin-bottom:1em;padding:0.75em 1em;background:var(--card-color,rgba(255,255,255,0.05));border-radius:4px;font-size:0.9em">
                     <span id="cwStatTotal"    style="margin-right:1.5em">Total: —</span>
                     <span id="cwStatTagged"   style="margin-right:1.5em;color:#2ecc71">✅ Tagged: —</span>
                     <span id="cwStatUntagged" style="color:#e67e22">⚠️ Not tagged: —</span>
                     <span id="cwCacheInfo"    style="float:right;color:var(--text-color-secondary);font-size:0.85em"></span>
                 </div>
-
-                <!-- Filter + load -->
                 <div style="display:flex;gap:8px;margin-bottom:1em;flex-wrap:wrap;align-items:center">
                     <input id="cwFilter" is="emby-input" type="text" placeholder="🔍 Search..." style="flex:1;min-width:180px" oninput="cwFilterTable()" />
                     <select id="cwFilterType" is="emby-select" class="emby-select-withcolor emby-select" style="width:130px" onchange="cwFilterTable()">
@@ -124,7 +113,6 @@
                     <button is="emby-button" id="cwLoadBtn"   class="raised"><span>📂 Load Library</span></button>
                     <button is="emby-button" id="cwReloadBtn" class="raised" style="display:none"><span>🔄 Reload</span></button>
                 </div>
-
                 <div id="cwTableWrap" style="display:none;overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;font-size:0.85em">
                         <thead>
@@ -175,6 +163,25 @@
         var cwSeries  = [];
         var cwLoaded  = false;
 
+        // ── Helper: fetch JSON with Jellyfin auth token ────────────────
+        function cwFetch(method, path, body) {
+            var token = ApiClient.accessToken();
+            var base  = ApiClient.serverAddress();
+            var url   = base + "/" + path;
+            var opts  = {
+                method: method,
+                headers: {
+                    "X-Emby-Authorization": 'MediaBrowser Token="' + token + '"',
+                    "Content-Type": "application/json"
+                }
+            };
+            if (body) opts.body = JSON.stringify(body);
+            return fetch(url, opts).then(function (r) {
+                if (!r.ok) throw { status: r.status };
+                return r.json();
+            });
+        }
+
         // ── Load config ────────────────────────────────────────────────
         function loadConfig() {
             Dashboard.showLoadingMsg();
@@ -189,9 +196,9 @@
                 } else {
                     s.innerHTML = "&#9888; No API key set yet"; s.style.color = "orange";
                 }
-                document.getElementById("cwModel").value        = config.GroqModel      || "llama-3.3-70b-versatile";
-                document.getElementById("cwMovies").checked     = config.EnableMovies    !== false;
-                document.getElementById("cwTvShows").checked    = config.EnableTvShows   !== false;
+                document.getElementById("cwModel").value        = config.GroqModel       || "llama-3.3-70b-versatile";
+                document.getElementById("cwMovies").checked     = config.EnableMovies     !== false;
+                document.getElementById("cwTvShows").checked    = config.EnableTvShows    !== false;
                 document.getElementById("cwTvEpisodes").checked = config.EnableTvEpisodes === true;
                 Dashboard.hideLoadingMsg();
             });
@@ -202,11 +209,11 @@
             Dashboard.showLoadingMsg();
             ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
                 var typed = document.getElementById("cwApiKey").value.trim();
-                config.GroqApiKey        = typed.length > 0 ? typed : document.getElementById("cwExistingKey").value;
-                config.GroqModel         = document.getElementById("cwModel").value;
-                config.EnableMovies      = document.getElementById("cwMovies").checked;
-                config.EnableTvShows     = document.getElementById("cwTvShows").checked;
-                config.EnableTvEpisodes  = document.getElementById("cwTvEpisodes").checked;
+                config.GroqApiKey       = typed.length > 0 ? typed : document.getElementById("cwExistingKey").value;
+                config.GroqModel        = document.getElementById("cwModel").value;
+                config.EnableMovies     = document.getElementById("cwMovies").checked;
+                config.EnableTvShows    = document.getElementById("cwTvShows").checked;
+                config.EnableTvEpisodes = document.getElementById("cwTvEpisodes").checked;
                 ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function (r) {
                     Dashboard.processPluginConfigurationUpdateResult(r);
                 });
@@ -233,19 +240,27 @@
             var s = document.getElementById("cwReprocessStatus");
             if (!itemId) { s.textContent = "Please enter an Item ID."; s.style.color = "orange"; return; }
             s.textContent = "Processing..."; s.style.color = "var(--text-color-secondary)";
-            ApiClient.ajax({ type: "POST", url: ApiClient.getUrl("ContentWarnings/Reprocess/" + itemId) })
-            .then(function (r) { cwUpdateById(itemId, r); s.innerHTML = "&#10003; Done!"; s.style.color = "green"; document.getElementById("cwItemId").value = ""; })
-            .catch(function (e) { s.textContent = "Error: " + (e.status === 404 ? "Not found." : "Failed."); s.style.color = "red"; });
+            cwFetch("POST", "ContentWarnings/Reprocess/" + itemId)
+            .then(function (r) {
+                cwUpdateById(itemId, r);
+                s.innerHTML = "&#10003; Done!"; s.style.color = "green";
+                document.getElementById("cwItemId").value = "";
+            }).catch(function (e) {
+                s.textContent = "Error: " + (e.status === 404 ? "Not found." : "Failed.");
+                s.style.color = "red";
+            });
         });
 
         // ── Load library ───────────────────────────────────────────────
         function cwLoadLibrary(bust) {
             var ls = document.getElementById("cwLoadStatus");
-            ls.textContent = bust ? "Reloading..." : "Loading..."; ls.style.color = "var(--text-color-secondary)";
+            ls.textContent = bust ? "Reloading..." : "Loading...";
+            ls.style.color = "var(--text-color-secondary)";
             document.getElementById("cwTableWrap").style.display = "none";
             document.getElementById("cwStatsBar").style.display  = "none";
-            var url = ApiClient.getUrl("ContentWarnings/LibraryStatus") + (bust ? "?bustCache=true" : "");
-            ApiClient.ajax({ type: "GET", url: url }).then(function (data) {
+            var path = "ContentWarnings/LibraryStatus" + (bust ? "?bustCache=true" : "");
+            cwFetch("GET", path)
+            .then(function (data) {
                 cwMovies = data.movies  || [];
                 cwSeries = data.series  || [];
                 cwLoaded = true;
@@ -254,10 +269,14 @@
                 document.getElementById("cwStatsBar").style.display  = "block";
                 document.getElementById("cwReloadBtn").style.display  = "inline-flex";
                 document.getElementById("cwLoadBtn").style.display    = "none";
-                document.getElementById("cwCacheInfo").textContent    = (data.cached ? "Cached" : "Fetched") + " at " + new Date(data.cachedAt).toLocaleTimeString();
+                document.getElementById("cwCacheInfo").textContent    =
+                    (data.cached ? "Cached" : "Fetched") + " at " + new Date(data.cachedAt).toLocaleTimeString();
                 ls.textContent = "";
                 cwFilterTable();
-            }).catch(function () { ls.textContent = "Failed to load. Check logs."; ls.style.color = "red"; });
+            }).catch(function () {
+                ls.textContent = "Failed to load. Check logs.";
+                ls.style.color = "red";
+            });
         }
 
         document.getElementById("cwLoadBtn")  .addEventListener("click", function () { cwLoadLibrary(false); });
@@ -265,36 +284,26 @@
 
         // ── Stats ──────────────────────────────────────────────────────
         function cwUpdateStats() {
-            var allItems = cwMovies.concat(cwSeries.flatMap(function (g) {
-                return [g].concat(g.episodes || []);
-            }));
-            var tagged   = allItems.filter(function (i) { return i.hasWarnings; }).length;
-            document.getElementById("cwStatTotal")  .textContent = "Total: "          + allItems.length;
-            document.getElementById("cwStatTagged") .textContent = "✅ Tagged: "       + tagged;
-            document.getElementById("cwStatUntagged").textContent = "⚠️ Not tagged: " + (allItems.length - tagged);
+            var allItems = cwMovies.concat(cwSeries.reduce(function (acc, g) {
+                return acc.concat([g]).concat(g.episodes || []);
+            }, []));
+            var tagged = allItems.filter(function (i) { return i.hasWarnings; }).length;
+            document.getElementById("cwStatTotal")   .textContent = "Total: "          + allItems.length;
+            document.getElementById("cwStatTagged")  .textContent = "✅ Tagged: "       + tagged;
+            document.getElementById("cwStatUntagged").textContent = "⚠️ Not tagged: "  + (allItems.length - tagged);
         }
 
-        // ── Render table ───────────────────────────────────────────────
+        // ── Render ─────────────────────────────────────────────────────
         function cwRenderTable(movies, series) {
             var tbody = document.getElementById("cwTableBody");
             var empty = document.getElementById("cwTableEmpty");
             tbody.innerHTML = "";
             var count = 0;
-
-            movies.forEach(function (item) {
-                tbody.appendChild(cwMovieRow(item));
-                count++;
-            });
-
+            movies.forEach(function (item) { tbody.appendChild(cwMovieRow(item)); count++; });
             series.forEach(function (g) {
-                tbody.appendChild(cwSeriesRow(g));
-                count++;
-                (g.episodes || []).forEach(function (ep) {
-                    tbody.appendChild(cwEpisodeRow(ep, g.seriesId));
-                    count++;
-                });
+                tbody.appendChild(cwSeriesRow(g)); count++;
+                (g.episodes || []).forEach(function (ep) { tbody.appendChild(cwEpisodeRow(ep)); count++; });
             });
-
             empty.style.display = count === 0 ? "block" : "none";
         }
 
@@ -310,9 +319,8 @@
             var tr = document.createElement("tr");
             tr.id = "cwrow-" + item.id;
             tr.style.borderBottom = "1px solid var(--border-color)";
-            var dot = item.hasWarnings ? "✅" : "⚠️";
             tr.innerHTML =
-                '<td style="padding:8px 10px">' + dot + ' ' + cwEsc(item.name) + '</td>' +
+                '<td style="padding:8px 10px">' + (item.hasWarnings ? "✅" : "⚠️") + " " + cwEsc(item.name) + '</td>' +
                 '<td style="padding:8px 6px;color:var(--text-color-secondary)">' + (item.year||"—") + '</td>' +
                 '<td style="padding:8px 6px"><span style="font-size:0.8em;background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:3px">Movie</span></td>' +
                 '<td style="padding:8px 6px;font-size:0.85em;color:var(--text-color-secondary)">' + cwEsc(item.rating||"—") + '</td>' +
@@ -326,9 +334,8 @@
             tr.id = "cwrow-" + g.seriesId;
             tr.style.borderBottom = "1px solid var(--border-color)";
             tr.style.background   = "rgba(255,255,255,0.03)";
-            var dot = g.hasWarnings ? "✅" : "⚠️";
             tr.innerHTML =
-                '<td style="padding:8px 10px;font-weight:500">' + dot + ' 📺 ' + cwEsc(g.seriesName) + '</td>' +
+                '<td style="padding:8px 10px;font-weight:500">' + (g.hasWarnings ? "✅" : "⚠️") + " 📺 " + cwEsc(g.seriesName) + '</td>' +
                 '<td style="padding:8px 6px;color:var(--text-color-secondary)">' + (g.year||"—") + '</td>' +
                 '<td style="padding:8px 6px"><span style="font-size:0.8em;background:rgba(41,128,185,0.2);color:#3498db;padding:2px 6px;border-radius:3px">Series</span></td>' +
                 '<td style="padding:8px 6px;font-size:0.85em;color:var(--text-color-secondary)">' + cwEsc(g.rating||"—") + '</td>' +
@@ -341,9 +348,8 @@
             var tr = document.createElement("tr");
             tr.id = "cwrow-" + ep.id;
             tr.style.borderBottom = "1px solid var(--border-color)";
-            var dot = ep.hasWarnings ? "✅" : "⚠️";
             tr.innerHTML =
-                '<td style="padding:6px 10px 6px 28px;color:var(--text-color-secondary)">' + dot + ' ' + cwEsc(ep.name) + '</td>' +
+                '<td style="padding:6px 10px 6px 28px;color:var(--text-color-secondary)">' + (ep.hasWarnings ? "✅" : "⚠️") + " " + cwEsc(ep.name) + '</td>' +
                 '<td style="padding:6px;color:var(--text-color-secondary)">' + (ep.year||"—") + '</td>' +
                 '<td style="padding:6px"><span style="font-size:0.75em;background:rgba(255,255,255,0.05);padding:2px 5px;border-radius:3px;color:var(--text-color-secondary)">Ep</span></td>' +
                 '<td style="padding:6px;font-size:0.85em;color:var(--text-color-secondary)">' + cwEsc(ep.rating||"—") + '</td>' +
@@ -358,26 +364,16 @@
             var search = document.getElementById("cwFilter").value.toLowerCase();
             var type   = document.getElementById("cwFilterType").value;
             var status = document.getElementById("cwFilterStatus").value;
-
-            function matchStatus(item) {
-                return status === "all" || (status === "tagged" && item.hasWarnings) || (status === "untagged" && !item.hasWarnings);
-            }
-
-            var filteredMovies = (type === "Series") ? [] : cwMovies.filter(function (m) {
-                return m.name.toLowerCase().includes(search) && matchStatus(m);
-            });
-
-            var filteredSeries = (type === "Movie") ? [] : cwSeries.filter(function (g) {
-                return g.seriesName.toLowerCase().includes(search) && matchStatus(g);
-            });
-
-            cwRenderTable(filteredMovies, filteredSeries);
+            function ms(i) { return status === "all" || (status === "tagged" && i.hasWarnings) || (status === "untagged" && !i.hasWarnings); }
+            var fm = type === "Series" ? [] : cwMovies.filter(function (m) { return m.name.toLowerCase().includes(search) && ms(m); });
+            var fs = type === "Movie"  ? [] : cwSeries.filter(function (g) { return g.seriesName.toLowerCase().includes(search) && ms(g); });
+            cwRenderTable(fm, fs);
         }
 
         // ── Rescan row ─────────────────────────────────────────────────
         function cwRescanRow(itemId, btn) {
             btn.disabled = true; btn.textContent = "⏳";
-            ApiClient.ajax({ type: "POST", url: ApiClient.getUrl("ContentWarnings/Reprocess/" + itemId) })
+            cwFetch("POST", "ContentWarnings/Reprocess/" + itemId)
             .then(function (r) {
                 cwUpdateById(itemId, r);
                 btn.textContent = "✅"; btn.style.color = "#2ecc71";
@@ -388,7 +384,7 @@
             });
         }
 
-        // ── Update item in data + DOM ──────────────────────────────────
+        // ── Update row in-place ────────────────────────────────────────
         function cwUpdateById(itemId, result) {
             var tags = result.descriptors || [];
             var has  = tags.length > 0;
@@ -401,10 +397,8 @@
             });
             var tr = document.getElementById("cwrow-" + itemId);
             if (tr) {
-                var tagCell = tr.cells[4];
-                if (tagCell) tagCell.innerHTML = cwTagsHtml({ hasWarnings: has, cwTags: tags });
-                var dotCell = tr.cells[0];
-                if (dotCell) dotCell.innerHTML = dotCell.innerHTML.replace(/^[✅⚠️]/, has ? "✅" : "⚠️");
+                tr.cells[4].innerHTML = cwTagsHtml({ hasWarnings: has, cwTags: tags });
+                tr.cells[0].innerHTML = tr.cells[0].innerHTML.replace(/^[✅⚠️]/, has ? "✅" : "⚠️");
             }
             cwUpdateStats();
         }
@@ -414,7 +408,7 @@
             if (!confirm("⚠️ ARE YOU SURE?\n\nThis will:\n1. DELETE all CW: tags\n2. Make 1 Groq API call per item\n\nLarge libraries can exhaust your rate limit.\n\nContinue?")) return;
             var s = document.getElementById("cwFullRescanStatus");
             s.textContent = "Step 1/2: Clearing all CW: tags..."; s.style.color = "orange";
-            ApiClient.ajax({ type: "DELETE", url: ApiClient.getUrl("ContentWarnings/ClearAll") })
+            cwFetch("DELETE", "ContentWarnings/ClearAll")
             .then(function (r) {
                 cwMovies.forEach(function (m) { m.hasWarnings = false; m.cwTags = []; });
                 cwSeries.forEach(function (g) { g.hasWarnings = false; g.cwTags = []; (g.episodes||[]).forEach(function(e){e.hasWarnings=false;e.cwTags=[];}); });
@@ -436,7 +430,7 @@
             if (!confirm("Remove ALL CW: tags? This cannot be undone.")) return;
             var s = document.getElementById("cwClearStatus");
             s.textContent = "Clearing..."; s.style.color = "var(--text-color-secondary)";
-            ApiClient.ajax({ type: "DELETE", url: ApiClient.getUrl("ContentWarnings/ClearAll") })
+            cwFetch("DELETE", "ContentWarnings/ClearAll")
             .then(function (r) {
                 cwMovies.forEach(function (m) { m.hasWarnings = false; m.cwTags = []; });
                 cwSeries.forEach(function (g) { g.hasWarnings = false; g.cwTags = []; (g.episodes||[]).forEach(function(e){e.hasWarnings=false;e.cwTags=[];}); });
