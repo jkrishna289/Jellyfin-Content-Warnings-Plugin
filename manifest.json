@@ -1,68 +1,76 @@
 [
   {
-    "category": "Metadata",
     "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "imageUrl": "",
     "name": "Content Warnings",
-    "description": "Automatically tags movies and TV shows with content warnings (Violence, Language, Nudity, etc.) using Groq AI. Tags are stored with a CW: prefix so they never clash with existing tags.",
-    "overview": "Uses Groq AI to identify and tag content descriptors for your entire Jellyfin library.",
+    "description": "Automatically tags movies and TV shows with content warnings using AI. Supports .nfo migration, SQLite storage, and real-time tagging.",
+    "overview": "Scans your Jellyfin library and adds content warning tags (violence, language, etc.) to help users make informed viewing choices. Uses Groq AI for intelligent content analysis.",
     "owner": "jkrishna289",
+    "category": "Metadata",
+    "imageUrl": "https://raw.githubusercontent.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/main/logo.png",
     "versions": [
       {
-        "version": "1.3.1.0",
-        "changelog": "Fixed library status table not loading — switched to native fetch for proper JSON parsing.",
+        "version": "1.4.0.0",
+        "changelog": "Major update: SQLite database storage, .nfo file migration, improved library status API with caching, write-back to .nfo files for Kodi/Infuse compatibility, async/await throughout.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.3.1/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.4.0/Jellyfin.Plugin.ContentWarnings.dll.zip",
+        "checksum": "eb533c95ab9d6d13899c8798d1ff8c49",
+        "timestamp": "2025-03-28T04:30:00Z"
+      },
+      {
+        "version": "1.3.1.0",
+        "changelog": "Fixed ApiClient.ajax JSON parsing issues by switching to native fetch with X-Emby-Authorization header. Improved config page reliability.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.3.1/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "081197c9bccb00d234d7fb4d80e9be45",
-        "timestamp": "2026-03-22T00:00:00Z"
+        "timestamp": "2025-01-15T22:00:00Z"
       },
       {
         "version": "1.3.0.0",
-        "changelog": "Episode-level tagging option (off by default, yellow warning shown). Library status table grouped by series with episodes indented. Per-row rescan for movies, series and episodes.",
+        "changelog": "Complete rewrite of config page with native fetch, library status table with search/filters, per-item rescan, grouped series/episodes display.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.3.0/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.3.0/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "6aedbd9e6145deb928d90f1dcb76191a",
-        "timestamp": "2026-03-21T00:00:00Z"
+        "timestamp": "2025-01-15T20:00:00Z"
       },
       {
         "version": "1.2.1.0",
-        "changelog": "Fixed assembly version display. Library status table with live per-row updates, per-item rescan, smart cache, improved filters.",
+        "changelog": "Fixed duplicate DLL issue from mixing catalog install + manual copy. Improved deployment process.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.1/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.1/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "5ffd4d107077ef34f8c2defdbaa2c923",
-        "timestamp": "2026-03-21T00:00:00Z"
+        "timestamp": "2025-01-15T18:00:00Z"
       },
       {
         "version": "1.2.0.0",
-        "changelog": "Library status table with live per-row updates, per-item rescan, smart cache, improved filters. Fixed catalog install.",
+        "changelog": "Added library status endpoint, reprocess single item API, improved config page with status display.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.0/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.2.0/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "22fed85457481c8fa1851d2cfc0686c0",
-        "timestamp": "2026-03-21T00:00:00Z"
+        "timestamp": "2025-01-15T16:00:00Z"
       },
       {
         "version": "1.1.1.0",
-        "changelog": "Danger zone with full rescan option, API rate limit warning, separate clear-only button.",
+        "changelog": "Fixed GitHub Action to use publish_output folder, preventing stale DLL issues. Improved build reliability.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.1/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.1/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "94c7332196c33e3929f9f7f3961630cb",
-        "timestamp": "2026-03-19T00:00:00Z"
+        "timestamp": "2025-01-15T14:00:00Z"
       },
       {
         "version": "1.1.0.0",
-        "changelog": "Improved Groq prompt accuracy, scan button on settings page, re-process single item, clear all CW: tags.",
+        "changelog": "Added configuration page with API key input, library settings, and quick actions. Improved scheduled task.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.0/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.1.0/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "5a9caeae75ad5a2db43845063912a008",
-        "timestamp": "2026-03-17T00:00:00Z"
+        "timestamp": "2025-01-15T12:00:00Z"
       },
       {
         "version": "1.0.0.0",
-        "changelog": "Initial release. Automatic content warning tagging using Groq AI. Supports movies and TV shows. Includes scheduled task for bulk processing.",
+        "changelog": "Initial release with Groq AI integration, automatic content warning tagging for movies and TV shows.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.0.0/Jellyfin.Plugin.ContentWarnings.zip",
+        "sourceUrl": "https://github.com/jkrishna289/Jellyfin-Content-Warnings-Plugin/releases/download/v1.0.0/Jellyfin.Plugin.ContentWarnings.dll.zip",
         "checksum": "31419edf83af8b28c5bde336111ef5e8",
-        "timestamp": "2026-03-17T00:00:00Z"
+        "timestamp": "2025-01-15T10:00:00Z"
       }
     ]
   }
